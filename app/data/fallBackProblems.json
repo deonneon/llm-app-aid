@@ -1,0 +1,34 @@
+[
+  {
+    "problem": "What is the Spanish translation for 'hello'?",
+    "answer": "Hola"
+  },
+  {
+    "problem": "How do you say 'good morning' in Spanish?",
+    "answer": "Buenos días"
+  },
+  {
+    "problem": "What is the Spanish greeting for 'good afternoon'?",
+    "answer": "Buenas tardes"
+  },
+  {
+    "problem": "How do you say 'good evening' in Spanish?",
+    "answer": "Buenas noches"
+  },
+  {
+    "problem": "What is the Spanish translation for 'how are you'?",
+    "answer": "¿Cómo estás?"
+  },
+  {
+    "problem": "How do you say 'nice to meet you' in Spanish?",
+    "answer": "Mucho gusto"
+  },
+  {
+    "problem": "What is the Spanish greeting for 'goodbye'?",
+    "answer": "Adiós"
+  },
+  {
+    "problem": "How do you say 'see you later' in Spanish?",
+    "answer": "Hasta luego"
+  }
+]
