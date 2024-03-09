@@ -6,12 +6,8 @@ import { encode } from "gpt-tokenizer";
 const debounce = (func, wait) => {
   let timeout;
   return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
     clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+    timeout = setTimeout(() => func(...args), wait);
   };
 };
 
@@ -22,34 +18,46 @@ function FileTree() {
   const [copySuccess, setCopySuccess] = useState("");
   const [customText, setCustomText] = useState("");
   const [tokenNum, setTokenNum] = useState(0);
-  const [directoryPath, setDirectoryPath] = useState("");
+  const [directoryPath, setDirectoryPath] = useState("app");
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    fetch("/api/files")
+  const loadDirectory = () => {
+    inputRef.current?.focus();
+    setDirectoryPath("./set/project/path");
+  };
+
+  const fetchAndSetFiles = useCallback(() => {
+    if (!directoryPath) return;
+
+    fetch(`/api/files?dir=${encodeURIComponent(directoryPath)}`)
       .then((res) => res.json())
       .then((data) => {
         setFiles(data);
         const allFiles = new Set();
         const collectFiles = (items, prefix = "") => {
           items.forEach((item) => {
-            // Check if it's a file (i.e., has no children)
+            const filePath = prefix ? `${prefix}/${item.name}` : item.name;
             if (!item.children) {
-              const filePath = prefix ? `${prefix}/${item.name}` : item.name;
               allFiles.add(filePath);
             } else {
-              // If it's a folder, recurse into its children
-              collectFiles(
-                item.children,
-                prefix ? `${prefix}/${item.name}` : item.name
-              );
+              collectFiles(item.children, filePath);
             }
           });
         };
         collectFiles(data);
         setSelectedFiles(allFiles);
-      });
-  }, []);
+      })
+      .catch((error) => console.error("Error loading directory:", error));
+  }, [directoryPath]);
+
+  useEffect(() => {
+    const debouncedFetch = debounce(fetchAndSetFiles, 500);
+    debouncedFetch();
+  }, [fetchAndSetFiles]);
+
+  useEffect(() => {
+    fetchAndSetFiles();
+  }, [fetchAndSetFiles]);
 
   const handleFileCheck = (filePath) => {
     setSelectedFiles((prevSelectedFiles) => {
@@ -66,8 +74,16 @@ function FileTree() {
   const handleSubmit = async () => {
     const contents = await Promise.all(
       Array.from(selectedFiles).map((file) =>
-        fetch(`/api/content?file=${file}`).then((res) =>
-          res.text().then((content) => ({
+        fetch(
+          `/api/content?file=${file}&dir=${encodeURIComponent(directoryPath)}`
+        )
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`Server responded with status ${res.status}`);
+            }
+            return res.text();
+          })
+          .then((content) => ({
             fileName: file,
             content: content
               .trim()
@@ -75,7 +91,13 @@ function FileTree() {
               .filter((line) => line.trim().length > 0)
               .join("\n"),
           }))
-        )
+          .catch((error) => {
+            console.error(`Failed to fetch file content for ${file}:`, error);
+            return {
+              fileName: file,
+              content: `Error: Failed to fetch content. ${error.message}`,
+            };
+          })
       )
     );
 
@@ -92,70 +114,6 @@ function FileTree() {
     setTokenNum(tokenCount);
     console.log(`Token Count: ${tokenCount}`);
   };
-
-  const debounce = (func, wait) => {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  };
-
-  const loadDirectory = useCallback(() => {
-    if (!directoryPath) {
-      inputRef.current.focus();
-      return;
-    }
-
-    if (directoryPath) {
-      fetch(`/api/files?dir=${encodeURIComponent(directoryPath)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setFiles(data);
-          const allFiles = new Set();
-          const collectFiles = (items, prefix = "") => {
-            items.forEach((item) => {
-              // Check if it's a file (i.e., has no children)
-              if (!item.children) {
-                const filePath = prefix ? `${prefix}/${item.name}` : item.name;
-                // Check if the file path contains any of the ignored folders
-                if (
-                  !filePath.includes(".git") &&
-                  !filePath.includes(".next") &&
-                  !filePath.includes(".netlify")
-                ) {
-                  allFiles.add(filePath);
-                }
-              } else {
-                // If it's a folder, recurse into its children
-                collectFiles(
-                  item.children,
-                  prefix ? `${prefix}/${item.name}` : item.name
-                );
-              }
-            });
-          };
-          collectFiles(data);
-          setSelectedFiles(allFiles);
-        })
-        .catch((error) => {
-          console.error("Error loading directory:", error);
-        });
-    }
-  }, [directoryPath]);
-
-  useEffect(() => {
-    const debouncedLoadDirectory = debounce(loadDirectory, 500);
-
-    // If directoryPath is not empty, call the debounced function
-    if (directoryPath) {
-      debouncedLoadDirectory(directoryPath);
-    }
-  }, [directoryPath, loadDirectory]);
 
   const copyToClipboard = useCallback((text) => {
     if (navigator.clipboard) {
@@ -185,14 +143,7 @@ function FileTree() {
   const renderTree = (items, prefix = "") => {
     return items.map((item, index) => {
       const filePath = prefix ? `${prefix}/${item.name}` : item.name;
-
-      if (
-        filePath.includes(".git") ||
-        filePath.includes(".next") ||
-        filePath.includes(".netlify")
-      ) {
-        return null; // Skip rendering this item
-      }
+      const isChecked = selectedFiles.has(filePath);
 
       return (
         <div key={index}>
@@ -230,7 +181,7 @@ function FileTree() {
               <>
                 <input
                   type="checkbox"
-                  checked={selectedFiles.has(filePath)}
+                  checked={isChecked} // Bind checked state to whether file is selected
                   onChange={() => handleFileCheck(filePath)}
                   className="mr-2"
                 />
@@ -249,13 +200,13 @@ function FileTree() {
                     d="M12 4v7m0 0H5m7 0h7M5 11V5a2 2 0 012-2h5l4 4v4m-7 7h.01M19 11v8a2 2 0 01-2 2H7a2 2 0 01-2-2V7m10 4h4"
                   />
                 </svg>
-                {item.name} {/* Display file name */}
+                {item.name}
               </>
             )}
           </div>
           {item.children && (
             <div style={{ marginLeft: "20px" }}>
-              {renderTree(item.children, filePath)}{" "}
+              {item.children && renderTree(item.children, filePath)}
               {/* Render children for folders */}
             </div>
           )}
@@ -272,7 +223,7 @@ function FileTree() {
             <div className="flex flex-row  mb-2">
               <button
                 onClick={loadDirectory}
-                className="bg-blue-700 hover:bg-blue-800 text-white font-bold p-2 rounded mr-2"
+                className="bg-blue-600 hover:bg-blue-800 text-white font-bold p-2 rounded mr-2"
                 aria-label="Load Project Folder"
               >
                 <svg
@@ -297,7 +248,6 @@ function FileTree() {
                 onChange={(e) => {
                   const newPath = e.target.value;
                   setDirectoryPath(newPath);
-                  loadDirectory(newPath); // Call the debounced function with the new path
                 }}
                 placeholder="Custom Directory path..."
                 className="w-full px-3 py-2 bg-gray-900 text-gray-300 rounded focus:outline-none focus:border-blue-500"
