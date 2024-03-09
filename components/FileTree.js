@@ -119,10 +119,19 @@ function FileTree() {
           const allFiles = new Set();
           const collectFiles = (items, prefix = "") => {
             items.forEach((item) => {
+              // Check if it's a file (i.e., has no children)
               if (!item.children) {
                 const filePath = prefix ? `${prefix}/${item.name}` : item.name;
-                allFiles.add(filePath);
+                // Check if the file path contains any of the ignored folders
+                if (
+                  !filePath.includes(".git") &&
+                  !filePath.includes(".next") &&
+                  !filePath.includes(".netlify")
+                ) {
+                  allFiles.add(filePath);
+                }
               } else {
+                // If it's a folder, recurse into its children
                 collectFiles(
                   item.children,
                   prefix ? `${prefix}/${item.name}` : item.name
@@ -176,6 +185,15 @@ function FileTree() {
   const renderTree = (items, prefix = "") => {
     return items.map((item, index) => {
       const filePath = prefix ? `${prefix}/${item.name}` : item.name;
+
+      if (
+        filePath.includes(".git") ||
+        filePath.includes(".next") ||
+        filePath.includes(".netlify")
+      ) {
+        return null; // Skip rendering this item
+      }
+
       return (
         <div key={index}>
           <div
