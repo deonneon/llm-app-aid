@@ -72,6 +72,9 @@ function FileTree() {
   };
 
   const handleSubmit = async () => {
+    // Generate file tree string
+    const fileTreeString = generateFileTreeString(files);
+
     const contents = await Promise.all(
       Array.from(selectedFiles).map((file) =>
         fetch(
@@ -102,9 +105,11 @@ function FileTree() {
     );
 
     const concatenatedText =
+      `File Tree:\n${fileTreeString}\n` +
       contents
         .map(({ fileName, content }) => `File: ${fileName}\n${content}`)
-        .join("\n\n") + `\n\n${customText}`;
+        .join("\n\n") +
+      `\n\n${customText}`;
 
     setConcatenated(concatenatedText);
 
@@ -139,6 +144,19 @@ function FileTree() {
       setTimeout(() => setCopySuccess(""), 2000);
     }
   }, []);
+
+  const generateFileTreeString = (items, prefix = "") => {
+    let result = "";
+    items.forEach((item, index) => {
+      const filePath = prefix ? `${prefix}/${item.name}` : item.name;
+      result += `${filePath}\n`;
+      if (item.children) {
+        result += generateFileTreeString(item.children, filePath);
+      }
+    });
+    console.log("file tree results:", result);
+    return result;
+  };
 
   const renderTree = (items, prefix = "") => {
     return items.map((item, index) => {

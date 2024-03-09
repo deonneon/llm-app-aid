@@ -31,6 +31,7 @@ router.get((req: NextApiRequest, res: NextApiResponse) => {
       ".woff",
       ".woff2",
       ".txt",
+      ".pdf",
     ];
     const ext = path.extname(fileName).toLowerCase();
     return imageExtensions.includes(ext);
