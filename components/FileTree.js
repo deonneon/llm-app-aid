@@ -1,15 +1,29 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { encode } from "gpt-tokenizer";
+
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 function FileTree() {
   const [files, setFiles] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState(new Set());
   const [concatenated, setConcatenated] = useState("");
   const [copySuccess, setCopySuccess] = useState("");
-  const [customText, setCustomText] = useState(""); // Step 1: New state for custom text
+  const [customText, setCustomText] = useState("");
   const [tokenNum, setTokenNum] = useState(0);
+  const [directoryPath, setDirectoryPath] = useState("");
+  const inputRef = useRef(null);
 
   useEffect(() => {
     fetch("/api/files")
@@ -68,18 +82,71 @@ function FileTree() {
     const concatenatedText =
       contents
         .map(({ fileName, content }) => `File: ${fileName}\n${content}`)
-        .join("\n\n") + `\n\n${customText}`; // Append custom text
+        .join("\n\n") + `\n\n${customText}`;
 
     setConcatenated(concatenatedText);
 
     // Tokenize and count
     const tokens = encode(concatenatedText);
-    const tokenCount = tokens.length; // Get the count of tokens
+    const tokenCount = tokens.length;
     setTokenNum(tokenCount);
-    // Optionally, store the tokenCount in state or use it as needed
     console.log(`Token Count: ${tokenCount}`);
-    // You can set this in the state to display
   };
+
+  const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
+  const loadDirectory = useCallback(() => {
+    if (!directoryPath) {
+      inputRef.current.focus();
+      return;
+    }
+
+    if (directoryPath) {
+      fetch(`/api/files?dir=${encodeURIComponent(directoryPath)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setFiles(data);
+          const allFiles = new Set();
+          const collectFiles = (items, prefix = "") => {
+            items.forEach((item) => {
+              if (!item.children) {
+                const filePath = prefix ? `${prefix}/${item.name}` : item.name;
+                allFiles.add(filePath);
+              } else {
+                collectFiles(
+                  item.children,
+                  prefix ? `${prefix}/${item.name}` : item.name
+                );
+              }
+            });
+          };
+          collectFiles(data);
+          setSelectedFiles(allFiles);
+        })
+        .catch((error) => {
+          console.error("Error loading directory:", error);
+        });
+    }
+  }, [directoryPath]);
+
+  useEffect(() => {
+    const debouncedLoadDirectory = debounce(loadDirectory, 500);
+
+    // If directoryPath is not empty, call the debounced function
+    if (directoryPath) {
+      debouncedLoadDirectory(directoryPath);
+    }
+  }, [directoryPath, loadDirectory]);
 
   const copyToClipboard = useCallback((text) => {
     if (navigator.clipboard) {
@@ -183,7 +250,43 @@ function FileTree() {
     <div className="flex flex-col  p-10">
       <div className="flex flex-row">
         <div className="flex flex-col w-1/2 pr-2  justify-center">
-          <div className="overflow-y-auto h-[80vh] ">{renderTree(files)}</div>
+          <div className="flex flex-col h-[80vh] ">
+            <div className="flex flex-row  mb-2">
+              <button
+                onClick={loadDirectory}
+                className="bg-blue-700 hover:bg-blue-800 text-white font-bold p-2 rounded mr-2"
+                aria-label="Load Project Folder"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 7v10c0 1.1.9 2 2 2h14a2 2 0 002-2V7a2 2 0 00-2-2H9l-2-2H5a2 2 0 00-2 2z"
+                  />
+                </svg>
+              </button>
+              <input
+                ref={inputRef}
+                type="text"
+                value={directoryPath}
+                onChange={(e) => {
+                  const newPath = e.target.value;
+                  setDirectoryPath(newPath);
+                  loadDirectory(newPath); // Call the debounced function with the new path
+                }}
+                placeholder="Custom Directory path..."
+                className="w-full px-3 py-2 bg-gray-900 text-gray-300 rounded focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div className="overflow-y-auto ">{renderTree(files)}</div>
+          </div>
         </div>
         <div className="w-1/2 pl-2">
           <pre
