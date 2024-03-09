@@ -315,7 +315,7 @@ function FileTree() {
           onChange={(e) => setCustomText(e.target.value)}
           className="mt-5 bg-white hover:bg-gray-100 text-black font-bold py-2 px-4 rounded w-full"
           style={{ height: "80px" }}
-          placeholder="Enter custom text here..."
+          placeholder="Enter custom text here...   Example: I am creating a React App for worksheet generation. The goal is to create a worksheet with practice problems for students to use. These are all the scripts for my React App."
         />
         <button
           onClick={handleSubmit}
