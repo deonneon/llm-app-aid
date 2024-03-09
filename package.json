@@ -1,6 +1,6 @@
 {
-  "name": "my-project-viewer",
-  "version": "0.1.0",
+  "name": "llm-app-aid",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
