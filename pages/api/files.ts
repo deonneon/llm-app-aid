@@ -27,6 +27,10 @@ router.get((req: NextApiRequest, res: NextApiResponse) => {
       ".json",
       ".env",
       ".sh",
+      ".ico",
+      ".woff",
+      ".woff2",
+      ".txt",
     ];
     const ext = path.extname(fileName).toLowerCase();
     return imageExtensions.includes(ext);
@@ -41,6 +45,10 @@ router.get((req: NextApiRequest, res: NextApiResponse) => {
       "next-env.d.ts",
       "next.config.mjs",
       "postcss.config.js",
+      ".env",
+      ".DS_Store",
+      ".prettierignore",
+      ".prettierrc",
     ];
     return explicitFileNames.includes(fileName);
   };
@@ -51,7 +59,9 @@ router.get((req: NextApiRequest, res: NextApiResponse) => {
       return dirents
         .filter(
           (dirent) =>
-            ![".git", "node_modules", ".next"].includes(dirent.name) &&
+            ![".git", "node_modules", ".next", ".netlify"].includes(
+              dirent.name
+            ) &&
             !isImage(dirent.name) &&
             !isExplicitFileName(dirent.name)
         )
@@ -63,7 +73,7 @@ router.get((req: NextApiRequest, res: NextApiResponse) => {
         });
     } catch (error) {
       console.error("Error reading directory:", error);
-      return []; // Return an empty array or handle the error as appropriate
+      return [];
     }
   };
 
