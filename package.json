@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "gpt-tokenizer": "^2.1.2",
+    "js-tiktoken": "^1.0.10",
     "next": "14.1.0",
     "next-connect": "^1.0.0",
     "react": "^18",
