@@ -4,7 +4,7 @@
 
 ## Overview
 
-LLM App Aid is a local web application designed to streamline the process of compiling the full code project context that will be fed to LLMs while avoiding dilution. It enables users to view, select, and fetch content from files within a specified directory dynamically. The application is built with React, Next.js, and leverages Tailwind CSS for styling.
+LLM App Aid is a local web tool aimed at efficiently gathering pertinent project code for LLMs while circumventing token constraints. Its purpose is to streamline the process by allowing users to dynamically view, select, and retrieve content from specified directories. This eliminates the need for manual copying and pasting of files and provides a quick filtering mechanism, ultimately reducing dilution by including only desired files. The application is built with React, Next.js, and leverages Tailwind CSS for styling.
 
 This app includes functionality to:
 
