@@ -1,2 +1,3 @@
 Add a persisting memory to what is checked and uncheck
 Need to fix persisting memory between each session.
+Add the filter backend. it only works with the tree but the backend doesn't work. 

@@ -21,6 +21,9 @@ function FileTree() {
   const [directoryPath, setDirectoryPath] = useState("app");
   const inputRef = useRef(null);
   const [savedDirectories, setSavedDirectories] = useState([]);
+  const [filterDropdownVisible, setFilterDropdownVisible] = useState(false);
+  const [selectedExtensions, setSelectedExtensions] = useState(new Set());
+  const filterDropdownRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -252,10 +255,58 @@ function FileTree() {
     return result;
   };
 
+  const toggleFilterDropdown = () => {
+    setFilterDropdownVisible(!filterDropdownVisible);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target)
+      ) {
+        setFilterDropdownVisible(false);
+      }
+    };
+
+    if (filterDropdownVisible) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [filterDropdownVisible]);
+
+  const handleExtensionSelection = (extension) => {
+    setSelectedExtensions((prevSelectedExtensions) => {
+      const newSelectedExtensions = new Set(prevSelectedExtensions);
+      if (newSelectedExtensions.has(extension)) {
+        newSelectedExtensions.delete(extension);
+      } else {
+        newSelectedExtensions.add(extension);
+      }
+      return newSelectedExtensions;
+    });
+  };
+
+  const isExtensionSelected = (extension) => {
+    return selectedExtensions.size === 0 || selectedExtensions.has(extension);
+  };
+
+  const getExtension = (fileName) => {
+    return fileName.split(".").pop();
+  };
+
   const renderTree = (items, prefix = "") => {
     return items.map((item, index) => {
       const filePath = prefix ? `${prefix}/${item.name}` : item.name;
       const isChecked = selectedFiles.has(filePath);
+      const extension = item.children ? null : getExtension(item.name);
+
+      if (!isExtensionSelected(extension)) {
+        return null;
+      }
 
       return (
         <div key={index}>
@@ -375,15 +426,43 @@ function FileTree() {
                 <option value="clear">Clear Saved Directories</option>
               </select>
             </div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={isAllSelected()}
-                onChange={toggleSelectAll}
-                className="form-checkbox accent-orange-400"
-              />
-              <span className="ml-2">...</span>
-            </label>
+            <div className="flex flex-row justify-between">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected()}
+                  onChange={toggleSelectAll}
+                  className="form-checkbox accent-orange-400"
+                />
+                <span className="ml-2">...</span>
+              </label>
+              <svg
+                onClick={toggleFilterDropdown}
+                className="fill-current text-orange-400 h-4 w-4 ml-2 mt-1 cursor-pointer border-b border-orange-400 border-dashed"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+              >
+                <path d="M10,2A1,1,0,0,0,9,3V21a1,1,0,0,0,2,0V3A1,1,0,0,0,10,2Zm4,8a1,1,0,0,0-1,1v8a1,1,0,0,0,2,0V11A1,1,0,0,0,14,10Zm-8,4a1,1,0,0,0-1,1v4a1,1,0,0,0,2,0V15A1,1,0,0,0,6,14Z" />
+              </svg>
+              {filterDropdownVisible && (
+                <div
+                  ref={filterDropdownRef}
+                  className="absolute bg-gray-700 shadow-md p-2 top-30 left-72"
+                >
+                  {["js", "jsx", "ts", "tsx", "css", "html"].map((ext) => (
+                    <div key={ext} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={isExtensionSelected(ext)}
+                        onChange={() => handleExtensionSelection(ext)}
+                        className="form-checkbox accent-orange-400 mr-2"
+                      />
+                      <label>{ext.toUpperCase()}</label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="overflow-y-auto ">{renderTree(files)}</div>
           </div>
         </div>
