@@ -379,7 +379,7 @@ function FileTree() {
   };
 
   return (
-    <div className="flex flex-col  p-10">
+    <div className="flex flex-col p-10">
       <div className="flex flex-row">
         <div className="flex flex-col w-1/2 pr-2  justify-center">
           <div className="flex flex-col h-[80vh] ">
@@ -497,30 +497,24 @@ function FileTree() {
         </div>
       </div>
       {tokenNum > 0 ? (
-        <div
-          className="flex justify-end text-right mt-1"
-          style={{ height: "15px" }}
-        >
+        <div className="flex justify-end text-right mt-2 h-2 text-sm">
           <p>Token Count: {tokenNum.toLocaleString()}</p>
         </div>
       ) : (
-        <div
-          className="flex justify-end text-right mt-1"
-          style={{ height: "15px" }}
-        ></div>
+        <div className="flex justify-end text-right mt-2 h-2 text-sm"></div>
       )}
       <div className="flex flex-row">
         <textarea
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
-          className="mt-5 bg-white hover:bg-gray-100 text-black font-bold py-2 px-4 rounded w-full"
-          style={{ height: "80px" }}
+          className="mt-5 bg-gray-200 hover:bg-gray-100 text-black py-2 px-4 text-sm text-bold rounded w-full"
+          style={{ height: "60px" }}
           placeholder="Enter custom text here...   Example: I am creating a React App for worksheet generation. The goal is to create a worksheet with practice problems for students to use. These are all the scripts for my React App."
         />
         <button
           onClick={handleSubmit}
           className="mt-5 ml-5 bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded"
-          style={{ height: "80px", width: " 500px" }}
+          style={{ height: "60px", width: " 500px" }}
         >
           Output
         </button>
