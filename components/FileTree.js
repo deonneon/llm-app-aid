@@ -20,10 +20,59 @@ function FileTree() {
   const [tokenNum, setTokenNum] = useState(0);
   const [directoryPath, setDirectoryPath] = useState("app");
   const inputRef = useRef(null);
+  const [savedDirectories, setSavedDirectories] = useState([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Load from localStorage once when the component mounts
+      const loadSavedDirectories =
+        window.localStorage.getItem("savedDirectories");
+      if (loadSavedDirectories) {
+        setSavedDirectories(JSON.parse(loadSavedDirectories));
+      }
+      console.log("localStorage is available in this environment.");
+    } else {
+      console.log("localStorage is not available in this environment.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Save to localStorage whenever savedDirectories changes
+      window.localStorage.setItem(
+        "savedDirectories",
+        JSON.stringify(savedDirectories)
+      );
+      console.log("localStorage is available in this environment.");
+    } else {
+      console.log("localStorage is not available in this environment.");
+    }
+  }, [savedDirectories]);
 
   const loadDirectory = () => {
     inputRef.current?.focus();
     setDirectoryPath("./set/project/path");
+  };
+
+  const handleDirectoryChange = (e) => {
+    const newPath = e.target.value;
+    setDirectoryPath(newPath);
+    setSavedDirectories((prevDirectories) => {
+      if (!prevDirectories.includes(newPath)) {
+        return [...prevDirectories, newPath];
+      }
+      return prevDirectories;
+    });
+  };
+
+  const handleDirectorySelect = (e) => {
+    const newPath = e.target.value;
+    if (newPath === "clear") {
+      setSavedDirectories([]);
+      localStorage.removeItem("savedDirectories");
+    } else {
+      setDirectoryPath(newPath);
+    }
   };
 
   const fetchAndSetFiles = useCallback(() => {
@@ -118,6 +167,51 @@ function FileTree() {
     const tokenCount = tokens.length;
     setTokenNum(tokenCount);
     console.log(`Token Count: ${tokenCount}`);
+  };
+
+  const isAllSelected = () => {
+    const allFiles = new Set();
+    const collectFiles = (items, prefix = "") => {
+      items.forEach((item) => {
+        const filePath = prefix ? `${prefix}/${item.name}` : item.name;
+        if (!item.children) {
+          allFiles.add(filePath);
+        } else {
+          collectFiles(item.children, filePath);
+        }
+      });
+    };
+    collectFiles(files);
+    for (let file of allFiles) {
+      if (!selectedFiles.has(file)) {
+        return false; // If any file is not selected, return false
+      }
+    }
+    return allFiles.size > 0; // Return true if all files are selected and there are files
+  };
+
+  // Function to toggle the selection of all files
+  const toggleSelectAll = (event) => {
+    const { checked } = event.target;
+    if (checked) {
+      // If checkbox is checked, select all files
+      const allFiles = new Set();
+      const collectFiles = (items, prefix = "") => {
+        items.forEach((item) => {
+          const filePath = prefix ? `${prefix}/${item.name}` : item.name;
+          if (!item.children) {
+            allFiles.add(filePath);
+          } else {
+            collectFiles(item.children, filePath);
+          }
+        });
+      };
+      collectFiles(files);
+      setSelectedFiles(allFiles);
+    } else {
+      // If checkbox is unchecked, deselect all files
+      setSelectedFiles(new Set());
+    }
   };
 
   const copyToClipboard = useCallback((text) => {
@@ -263,14 +357,33 @@ function FileTree() {
                 ref={inputRef}
                 type="text"
                 value={directoryPath}
-                onChange={(e) => {
-                  const newPath = e.target.value;
-                  setDirectoryPath(newPath);
-                }}
+                onChange={handleDirectoryChange}
                 placeholder="Custom Directory path..."
                 className="w-full px-3 py-2 bg-gray-900 text-gray-300 rounded focus:outline-none focus:border-blue-500"
               />
+              {/* Dropdown for selecting saved directories */}
+              <select
+                onChange={handleDirectorySelect}
+                value={directoryPath}
+                className="w-7 p-2 -ml-2 bg-gray-900 text-white rounded "
+              >
+                {savedDirectories.map((dir, index) => (
+                  <option key={index} value={dir}>
+                    {dir}
+                  </option>
+                ))}
+                <option value="clear">Clear Saved Directories</option>
+              </select>
             </div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={isAllSelected()}
+                onChange={toggleSelectAll}
+                className="form-checkbox accent-orange-400"
+              />
+              <span className="ml-2">...</span>
+            </label>
             <div className="overflow-y-auto ">{renderTree(files)}</div>
           </div>
         </div>

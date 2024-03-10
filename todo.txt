@@ -1,0 +1,2 @@
+Add a persisting memory to what is checked and uncheck
+Need to fix persisting memory between each session.
