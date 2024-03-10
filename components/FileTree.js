@@ -449,7 +449,15 @@ function FileTree() {
                   ref={filterDropdownRef}
                   className="absolute bg-gray-700 shadow-md p-2 top-30 left-72"
                 >
-                  {["js", "jsx", "ts", "tsx", "css", "html"].map((ext) => (
+                  {[
+                    "filter doesn't work rn",
+                    "js",
+                    "jsx",
+                    "ts",
+                    "tsx",
+                    "css",
+                    "html",
+                  ].map((ext) => (
                     <div key={ext} className="flex items-center">
                       <input
                         type="checkbox"
